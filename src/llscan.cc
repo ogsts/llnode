@@ -1602,6 +1602,9 @@ inline static ByteOrder GetHostByteOrder() {
 }
 
 void LLScan::ScanMemoryRegions(FindJSObjectsVisitor& v) {
+  
+  std::cout << "#-> LLScan::" << __func__ << " " << std::endl;
+
   const uint64_t addr_size = process_.GetAddressByteSize();
   bool swap_bytes = process_.GetByteOrder() != GetHostByteOrder();
 
@@ -1611,6 +1614,8 @@ void LLScan::ScanMemoryRegions(FindJSObjectsVisitor& v) {
 
   lldb::SBMemoryRegionInfoList memory_regions = process_.GetMemoryRegions();
   lldb::SBMemoryRegionInfo region_info;
+
+  std::cout << "    LLScan::" << __func__ << " memory_regions=" << memory_regions.GetSize() << std::endl;
 
   for (uint32_t i = 0; i < memory_regions.GetSize(); ++i) {
     memory_regions.GetMemoryRegionAtIndex(i, region_info);
@@ -1668,7 +1673,7 @@ void LLScan::ScanMemoryRegions(FindJSObjectsVisitor& v) {
       }
     }
   }
-
+  std::cout << "<-# LLScan::" << __func__ << " " << std::endl;
   delete[] block;
 }
 
