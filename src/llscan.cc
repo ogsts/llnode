@@ -97,6 +97,7 @@ char** ParsePrinterOptions(char** cmd, Printer::PrinterOptions* options) {
 
 bool FindObjectsCmd::DoExecute(SBDebugger d, char** cmd,
                                SBCommandReturnObject& result) {
+  std::cout << "#-> FindObjectsCmd::" << __func__ << " " << std::endl;
   SBTarget target = d.GetSelectedTarget();
   if (!target.IsValid()) {
     result.SetError("No valid process, please start something\n");
@@ -106,21 +107,25 @@ bool FindObjectsCmd::DoExecute(SBDebugger d, char** cmd,
   // Load V8 constants from postmortem data
   llscan_->v8()->Load(target);
 
+  std::cout << "    FindObjectsCmd::" << __func__ << " scan ..." << std::endl;
   /* Ensure we have a map of objects. */
   if (!llscan_->ScanHeapForObjects(target, result)) {
     result.SetStatus(eReturnStatusFailed);
     return false;
   }
 
+  std::cout << "    FindObjectsCmd::" << __func__ << " parse ..." << std::endl;
   Printer::PrinterOptions printer_options;
   ParsePrinterOptions(cmd, &printer_options);
 
   if (printer_options.detailed) {
+    std::cout << "    FindObjectsCmd::" << __func__ << " detailed ..." << std::endl;
     DetailedOutput(result);
   } else {
+    std::cout << "    FindObjectsCmd::" << __func__ << " simple ..." << std::endl;
     SimpleOutput(result);
   }
-
+  std::cout << "<-# FindObjectsCmd::" << __func__ << " " << std::endl;
   result.SetStatus(eReturnStatusSuccessFinishResult);
   return true;
 }

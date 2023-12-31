@@ -411,7 +411,7 @@ namespace lldb {
 
 bool PluginInitialize(SBDebugger d) {
   llnode::InitDebugMode();
-
+  std::cout << "################ LLNode debugger plugin initialized ##########################" << std::endl;
   static llnode::v8::LLV8 llv8;
   static llnode::node::Node node(&llv8);
   static llnode::LLScan llscan = llnode::LLScan(&llv8);

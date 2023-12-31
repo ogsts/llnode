@@ -22,6 +22,7 @@ using lldb::SBTarget;
 static std::string kConstantPrefix = "v8dbg_";
 
 void LLV8::Load(SBTarget target) {
+  std::cout << "#-> LLV8::" << __func__ << " " << std::endl;
   // Reload process anyway
   process_ = target.GetProcess();
 
@@ -64,6 +65,7 @@ void LLV8::Load(SBTarget target) {
   frame.Assign(target, &common);
   symbol.Assign(target, &common);
   types.Assign(target, &common);
+  std::cout << "<-# LLV8::" << __func__ << " " << std::endl;
 }
 
 int64_t LLV8::LoadPtr(int64_t addr, Error& err) {
