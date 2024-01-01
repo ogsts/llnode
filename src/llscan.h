@@ -296,7 +296,7 @@ class FindJSObjectsVisitor : MemoryVisitor {
 
  private:
   // TODO (mmarchini): this could be an option for findjsobjects
-  static const size_t kNumberOfPropertiesForDetailedOutput = 3;
+  static const size_t kNumberOfPropertiesForDetailedOutput = 6;
 
   struct MapCacheEntry {
     enum ShowArrayLength { kShowArrayLength, kDontShowArrayLength };

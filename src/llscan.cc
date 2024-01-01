@@ -177,16 +177,27 @@ void FindObjectsCmd::DetailedOutput(SBCommandReturnObject& result) {
   uint64_t total_size = 0;
 
   result.Printf(
-      "   Sample Obj.  Instances  Total Size  Properties  Elements  Name\n");
+      "  Instances  Total Size  Properties  Elements  Name\n");
   result.Printf(
       " ------------- ---------- ----------- ----------- --------- -----\n");
 
   for (auto t : sorted_by_count) {
-    result.Printf(" %13" PRIx64 " %10" PRId64 " %11" PRId64 " %11" PRId64
-                  " %9" PRId64 " %s\n",
-                  *(t->GetInstances().begin()), t->GetInstanceCount(),
-                  t->GetTotalInstanceSize(), t->GetOwnDescriptorsCount(),
-                  t->GetIndexedPropertiesCount(), t->GetTypeName().c_str());
+    result.Printf(" %10" PRId64 " %11" PRId64 " %11" PRId64 " %9" PRId64 " %s              ",
+                  t->GetInstanceCount(),
+                  t->GetTotalInstanceSize(),
+                  t->GetOwnDescriptorsCount(),
+                  t->GetIndexedPropertiesCount(),
+                  t->GetTypeName().c_str());
+
+    uint32_t cnt = 0;
+    for (auto itr = t->GetInstances().begin(); itr != t->GetInstances().end(); ++itr) {
+      if (cnt++ > 10) {
+        break;
+      }
+      result.Printf(" %13" PRIx64 " ", *itr);
+    }
+    result.Printf("\n");
+
     total_objects += t->GetInstanceCount();
     total_size += t->GetTotalInstanceSize();
   }
@@ -1626,18 +1637,17 @@ void LLScan::ScanMemoryRegions(FindJSObjectsVisitor& v) {
 
     uint64_t address = region_info.GetRegionBase();
     uint64_t len = region_info.GetRegionEnd() - region_info.GetRegionBase();
+    std::cout << "    LLScan::" << __func__ << "     addr=" << std::hex << address << std::dec << ": len=" << len << std::endl;
 
-    /* Brute force search - query every address - but allow the visitor code to
-     * say how far to move on so we don't read every byte.
-     */
-
+    // Brute force search - query every address - but allow the visitor code to say how far to move on so we don't read every byte.
     SBError sberr;
     uint64_t address_end = address + len;
 
     // Load data in blocks to speed up whole process
-    for (auto searchAddress = address; searchAddress < address_end;
-         searchAddress += block_size) {
+    for (auto searchAddress = address; searchAddress < address_end; searchAddress += block_size) {
+
       size_t loaded = std::min(address_end - searchAddress, block_size);
+
       process_.ReadMemory(searchAddress, block, loaded, sberr);
       if (sberr.Fail()) {
         // TODO(indutny): add error information
