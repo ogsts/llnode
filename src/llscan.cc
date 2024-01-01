@@ -132,6 +132,7 @@ bool FindObjectsCmd::DoExecute(SBDebugger d, char** cmd,
 
 
 void FindObjectsCmd::SimpleOutput(SBCommandReturnObject& result) {
+  std::cout << "#-> FindObjectsCmd::" << __func__ << " " << std::endl;
   /* Create a vector to hold the entries sorted by instance count
    * TODO(hhellyer) - Make sort type an option (by count, size or name)
    */
@@ -209,8 +210,10 @@ void FindObjectsCmd::DetailedOutput(SBCommandReturnObject& result) {
 }
 
 
-bool FindInstancesCmd::DoExecute(SBDebugger d, char** cmd,
-                                 SBCommandReturnObject& result) {
+bool FindInstancesCmd::DoExecute(SBDebugger d, char** cmd, SBCommandReturnObject& result) {
+
+  std::cout << "#-> FindInstancesCmd::" << __func__ << " " << std::endl;
+
   if (cmd == nullptr || *cmd == nullptr) {
     result.SetError("USAGE: v8 findjsinstances [flags] instance_name\n");
     return false;
@@ -243,36 +246,33 @@ bool FindInstancesCmd::DoExecute(SBDebugger d, char** cmd,
 
   std::string type_name = full_cmd;
 
-  TypeRecordMap::iterator instance_it =
-      llscan_->GetMapsToInstances().find(type_name);
+  TypeRecordMap::iterator instance_it = llscan_->GetMapsToInstances().find(type_name);
 
   if (instance_it != llscan_->GetMapsToInstances().end()) {
     TypeRecord* t = instance_it->second;
 
     // Update pagination options
-    if (full_cmd != pagination_.command ||
-        printer_options.output_limit != pagination_.output_limit) {
+    if (full_cmd != pagination_.command || printer_options.output_limit != pagination_.output_limit) {
       pagination_.total_entries = t->GetInstanceCount();
       pagination_.command = full_cmd;
       pagination_.current_page = 0;
       pagination_.output_limit = printer_options.output_limit;
     } else {
-      if (pagination_.output_limit <= 0 ||
-          (pagination_.current_page + 1) * pagination_.output_limit >
-              pagination_.total_entries) {
+      if (pagination_.output_limit <= 0 || (pagination_.current_page + 1) * pagination_.output_limit > pagination_.total_entries) {
         pagination_.current_page = 0;
       } else {
         pagination_.current_page++;
       }
     }
 
-    int initial_p_offset =
-        (pagination_.current_page * printer_options.output_limit);
+    int initial_p_offset = (pagination_.current_page * printer_options.output_limit);
+
     int final_p_offset =
         initial_p_offset +
         std::min(pagination_.output_limit,
                  pagination_.total_entries -
                      pagination_.current_page * pagination_.output_limit);
+
     if (final_p_offset <= 0) {
       final_p_offset = pagination_.total_entries;
     }
@@ -307,6 +307,7 @@ bool FindInstancesCmd::DoExecute(SBDebugger d, char** cmd,
     return false;
   }
 
+  std::cout << "<-# FindInstancesCmd::" << __func__ << " " << std::endl;
   result.SetStatus(eReturnStatusSuccessFinishResult);
   return true;
 }
@@ -485,8 +486,10 @@ bool NodeInfoCmd::DoExecute(SBDebugger d, char** cmd,
   return true;
 }
 
-bool FindReferencesCmd::DoExecute(SBDebugger d, char** cmd,
-                                  SBCommandReturnObject& result) {
+bool FindReferencesCmd::DoExecute(SBDebugger d, char** cmd, SBCommandReturnObject& result) {
+  
+  std::cout << "#-> FindReferencesCmd::" << __func__ << " " << std::endl;
+
   if (cmd == nullptr || *cmd == nullptr) {
     result.SetError("USAGE: v8 findrefs expr\n");
     return false;
@@ -604,12 +607,16 @@ bool FindReferencesCmd::DoExecute(SBDebugger d, char** cmd,
 
   delete scanner;
 
+  std::cout << "<-# FindReferencesCmd::" << __func__ << " " << std::endl;
   result.SetStatus(eReturnStatusSuccessFinishResult);
   return true;
 }
 
 
 void FindReferencesCmd::ScanForReferences(ObjectScanner* scanner) {
+  
+  std::cout << "#-> FindReferencesCmd::" << __func__ << " " << std::endl;
+
   // Walk all the object instances and handle them according to their type.
   TypeRecordMap mapstoinstances = llscan_->GetMapsToInstances();
   for (auto const& entry : mapstoinstances) {
@@ -646,11 +653,17 @@ void FindReferencesCmd::ScanForReferences(ObjectScanner* scanner) {
       }
     }
   }
+  std::cout << "<-# FindReferencesCmd::" << __func__ << " " << std::endl;
 }
 
-void FindReferencesCmd::PrintRecursiveReferences(
-    lldb::SBCommandReturnObject& result, ScanOptions* options,
+void FindReferencesCmd::PrintRecursiveReferences(lldb::SBCommandReturnObject& result, ScanOptions* options,
     ReferencesVector* visited_references, uint64_t address, int level) {
+
+  std::cout << "#-> FindReferencesCmd::" << __func__ << " level=" << level << std::endl;
+  if ( level > 100 ) {
+    std::cout << "<-# FindReferencesCmd::" << __func__ << " too many levels " << std::endl;
+    return;
+  }
   Settings* settings = Settings::GetSettings();
   unsigned int padding = settings->GetTreePadding();
 
@@ -658,26 +671,25 @@ void FindReferencesCmd::PrintRecursiveReferences(
 
   result.Printf("%s", branch.c_str());
 
-  if (find(visited_references->begin(), visited_references->end(), address) !=
-      visited_references->end()) {
+  if (find(visited_references->begin(), visited_references->end(), address) != visited_references->end()) {
     std::stringstream seen_str;
-    seen_str << rang::fg::red << " [seen above]" << rang::fg::reset
-             << std::endl;
+    seen_str << rang::fg::red << " [seen above]" << rang::fg::reset << std::endl;
     result.Printf("%s", seen_str.str().c_str());
   } else {
     visited_references->push_back(address);
     v8::Value value(llscan_->v8(), address);
     ReferenceScanner scanner_(llscan_, value);
     ReferencesVector* references_ = scanner_.GetReferences();
-    PrintReferences(result, references_, &scanner_, options, visited_references,
-                    level + 1);
+    PrintReferences(result, references_, &scanner_, options, visited_references, level + 1);
   }
+  std::cout << "<-# FindReferencesCmd::" << __func__ << " " << std::endl;
 }
 
-void FindReferencesCmd::PrintReferences(
-    SBCommandReturnObject& result, ReferencesVector* references,
+void FindReferencesCmd::PrintReferences(SBCommandReturnObject& result, ReferencesVector* references,
     ObjectScanner* scanner, ScanOptions* options,
     ReferencesVector* already_visited_references, int level) {
+
+    std::cout << "#-> FindReferencesCmd::" << __func__ << " level=" << level  << std::endl;
   // Walk all the object instances and handle them according to their type.
   TypeRecordMap mapstoinstances = llscan_->GetMapsToInstances();
 
@@ -691,8 +703,8 @@ void FindReferencesCmd::PrintReferences(
     // We only need to handle the types that are in
     // FindJSObjectsVisitor::IsAHistogramType
     // as those are the only objects that end up in GetMapsToInstances
-    if (v8::JSObject::IsObjectType(v8, type) ||
-        type == v8->types()->kJSArrayType) {
+
+    if (v8::JSObject::IsObjectType(v8, type) || type == v8->types()->kJSArrayType) {
       // Objects can have elements and arrays can have named properties.
       // Basically we need to access objects and arrays as both objects and
       // arrays.
@@ -726,6 +738,8 @@ void FindReferencesCmd::PrintReferences(
   Error err;
   scanner->PrintContextRefs(result, err, this, options,
                             already_visited_references, level);
+
+  std::cout << "<-# FindReferencesCmd::" << __func__ << " " << std::endl;
 }
 
 
@@ -795,6 +809,9 @@ void FindReferencesCmd::ReferenceScanner::PrintContextRefs(
     SBCommandReturnObject& result, Error& err, FindReferencesCmd* cli_cmd_,
     ScanOptions* options, ReferencesVector* already_visited_references,
     int level) {
+  
+  std::cout << "#-> FindReferencesCmd::" << __func__ << " " << std::endl;
+
   ContextVector* contexts = llscan_->GetContexts();
   v8::LLV8* v8 = llscan_->v8();
 
@@ -839,6 +856,7 @@ void FindReferencesCmd::ReferenceScanner::PrintContextRefs(
       }
     }
   }
+  std::cout << "<-# FindReferencesCmd::" << __func__ << " " << std::endl;
 }
 
 std::string FindReferencesCmd::ObjectScanner::GetPropertyReferenceString(
@@ -1510,8 +1528,10 @@ bool FindJSObjectsVisitor::IsAHistogramType(v8::Map& map, Error& err) {
 }
 
 
-bool LLScan::ScanHeapForObjects(lldb::SBTarget target,
-                                lldb::SBCommandReturnObject& result) {
+bool LLScan::ScanHeapForObjects(lldb::SBTarget target, lldb::SBCommandReturnObject& result) {
+
+  std::cout << "#-> LLScan::" << __func__ << " " << std::endl;
+
   /* Check the last scan is still valid - the process hasn't moved
    * and we haven't changed target.
    */
@@ -1536,6 +1556,7 @@ bool LLScan::ScanHeapForObjects(lldb::SBTarget target,
 
     ScanMemoryRegions(v);
   }
+  std::cout << "<-# LLScan::" << __func__ << " " << std::endl;
 
   return true;
 }
